@@ -3,8 +3,10 @@
 import { AuthError } from "next-auth";
 
 import { signIn } from "@/auth";
-import { hashPassword } from "@/lib/utils";
+import { sendVerificationEmail } from "@/lib/email";
+import { hashPassword, verifyPassword } from "@/lib/utils";
 import { createUser, getUserByEmail } from "@/lib/models/user.model";
+import { generateVerificationToken } from "@/lib/token";
 import {
   SignInSchema,
   SignUpSchema,
@@ -18,6 +20,24 @@ export const signin = async (data: SignInSchemaType) => {
   if (!validateFields.success) throw new Error(validateFields.error.message);
 
   const { email, password } = validateFields.data;
+
+  const user = await getUserByEmail(email);
+  if (!user || !user.email || !user.password)
+    throw new Error("User does not exist!!");
+
+  if (!verifyPassword(password, user.password))
+    throw new Error("Invalid credentials");
+
+  if (!user.emailVerified) {
+    const token = await generateVerificationToken(email);
+
+    await sendVerificationEmail(token.email, user.name!, token.token);
+
+    return {
+      success: true,
+      message: "Verification email has been sent to your email address",
+    };
+  }
 
   try {
     await signIn("credentials", {
@@ -55,11 +75,15 @@ export const signup = async (data: SignUpSchemaType) => {
 
     const hashedPassword = await hashPassword(password);
 
-    const user = await createUser({
+    await createUser({
       name,
       email,
       password: hashedPassword,
     });
+
+    const token = await generateVerificationToken(email);
+
+    await sendVerificationEmail(token.email, name, token.token);
 
     return {
       success: true,

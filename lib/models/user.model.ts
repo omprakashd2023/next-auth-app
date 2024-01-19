@@ -38,3 +38,18 @@ export const getUserByEmail = async (email: string) => {
     throw new Error(error.message);
   }
 };
+
+export const setEmailVerification = async (id: string) => {
+  try {
+    await prisma.user.update({
+      where: {
+        id,
+      },
+      data: {
+        emailVerified: new Date(),
+      },
+    });
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
+};

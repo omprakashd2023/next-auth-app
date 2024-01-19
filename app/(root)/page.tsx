@@ -1,6 +1,7 @@
 import { auth, signOut } from "@/auth";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const Home = async () => {
   const user = await auth();
@@ -15,7 +16,14 @@ const Home = async () => {
       <div className="my-4">{JSON.stringify(user?.user?.email)}</div>
       <div className="my-4">{JSON.stringify(user?.user?.role)}</div>
       <form action={onSubmit}>
-        <Button type="submit">Sign Out</Button>
+        <Button
+          className={cn(
+            "bg-gradient-to-r from-red-500 to-orange-500 dark:text-white"
+          )}
+          type="submit"
+        >
+          Sign Out
+        </Button>
       </form>
     </main>
   );

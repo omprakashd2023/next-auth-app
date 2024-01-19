@@ -1,13 +1,19 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { GitHubLogoIcon, ReloadIcon } from "@radix-ui/react-icons";
-import { FaGoogle } from "react-icons/fa";
+import {
+  GitHubLogoIcon,
+  ReloadIcon,
+  ExclamationTriangleIcon,
+} from "@radix-ui/react-icons";
+import { FaGoogle, FaX } from "react-icons/fa6";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,11 +38,20 @@ import { SignInSchema, SignInSchemaType } from "@/lib/validation/user";
 import { cn } from "@/lib/utils";
 import { signin } from "@/lib/actions/user.action";
 
+import { DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN } from "@/routes";
+
 const SignUp = () => {
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isUrlError, setIsUrlError] = useState<boolean>(false);
   const router = useRouter();
 
-  const { toast } = useToast();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const error = searchParams.get("error") === "OAuthAccountNotLinked";
+    setIsUrlError(error);
+  }, []);
 
   const form = useForm<SignInSchemaType>({
     resolver: zodResolver(SignInSchema),
@@ -46,6 +61,12 @@ const SignUp = () => {
     },
   });
 
+  const onClick = (provider: "google" | "github") => {
+    signIn(provider, {
+      callbackUrl: DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN,
+    });
+  };
+
   const onSubmit = (data: SignInSchemaType) => {
     startTransition(async () => {
       try {
@@ -53,13 +74,13 @@ const SignUp = () => {
         if (response.success) {
           toast({
             title: "Success",
-            description: "You have successfully logged in!!",
+            description:
+              response.message || "You have successfully logged in!!",
             variant: "success",
           });
-          router.push(response.redirect);
+          response.redirect && router.replace(response.redirect);
         } else throw new Error("Internal Server Error");
       } catch (error: any) {
-        console.log(error);
         toast({
           title: "Error",
           description: `Failed to login user: ${error.message}`,
@@ -80,12 +101,45 @@ const SignUp = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {isUrlError && (
+          <div className="relative">
+            <Button
+              className="z-10 absolute top-2 right-2 cursor-pointer size-5 p-1 border-red-500/50"
+              variant={"outline"}
+              size={"icon"}
+              onClick={() => {
+                setIsUrlError(false);
+                router.replace("/sign-in");
+              }}
+            >
+              <FaX size={10} className="text-red-700/60" />
+            </Button>
+            <Alert className={cn("mb-4")} variant="destructive">
+              <ExclamationTriangleIcon height={16} width={16} />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>
+                The email you are trying to login with is already registered
+                with another provider!!
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
         <div className="w-full flex items-center gap-4 mb-2">
-          <Button variant={"outline"} size={"icon"} className="w-1/2">
+          <Button
+            onClick={() => onClick("github")}
+            variant={"outline"}
+            size={"icon"}
+            className="w-1/2"
+          >
             <GitHubLogoIcon height={22} width={22} />
             <span className="ml-1">Github</span>
           </Button>
-          <Button variant={"outline"} size={"icon"} className="w-1/2">
+          <Button
+            onClick={() => onClick("google")}
+            variant={"outline"}
+            size={"icon"}
+            className="w-1/2"
+          >
             <FaGoogle size={20} />
             <span className="ml-1">Google</span>
           </Button>
@@ -132,7 +186,7 @@ const SignUp = () => {
               {isPending ? (
                 <div className="flex items-center">
                   <ReloadIcon className="size-4 animate-spin" />
-                  <span className="ml-1">Logging...</span>
+                  <span className="ml-1">Logging in...</span>
                 </div>
               ) : (
                 "Login"

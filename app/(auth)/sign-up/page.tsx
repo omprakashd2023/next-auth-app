@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { signIn } from "next-auth/react";
 import { GitHubLogoIcon, ReloadIcon } from "@radix-ui/react-icons";
 import { FaGoogle } from "react-icons/fa";
 
@@ -31,10 +32,11 @@ import { signup } from "@/lib/actions/user.action";
 import { cn } from "@/lib/utils";
 import { SignUpSchema, SignUpSchemaType } from "@/lib/validation/user";
 
-const SignUp = () => {
-  const [isPending, startTransition] = useTransition();
+import { DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN } from "@/routes";
 
+const SignUp = () => {
   const { toast } = useToast();
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<SignUpSchemaType>({
     resolver: zodResolver(SignUpSchema),
@@ -44,6 +46,12 @@ const SignUp = () => {
       password: "",
     },
   });
+
+  const onClick = (provider: "google" | "github") => {
+    signIn(provider, {
+      callbackUrl: DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN,
+    });
+  };
 
   const onSubmit = (data: SignUpSchemaType) => {
     startTransition(async () => {
@@ -79,11 +87,21 @@ const SignUp = () => {
       </CardHeader>
       <CardContent>
         <div className="w-full flex items-center gap-4 mb-2">
-          <Button variant={"outline"} size={"icon"} className="w-1/2">
+          <Button
+            onClick={() => onClick("github")}
+            variant={"outline"}
+            size={"icon"}
+            className="w-1/2"
+          >
             <GitHubLogoIcon height={22} width={22} />
             <span className="ml-1">Github</span>
           </Button>
-          <Button variant={"outline"} size={"icon"} className="w-1/2">
+          <Button
+            onClick={() => onClick("google")}
+            variant={"outline"}
+            size={"icon"}
+            className="w-1/2"
+          >
             <FaGoogle size={20} />
             <span className="ml-1">Google</span>
           </Button>

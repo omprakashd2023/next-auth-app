@@ -3,7 +3,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 
 import authConfig from "@/auth.config";
 import prisma from "@/lib/prisma";
-import { getUserById } from "./lib/models/user.model";
+import { getUserById, setEmailVerification } from "./lib/models/user.model";
 
 declare module "next-auth" {
   interface Session {
@@ -19,7 +19,28 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
+  pages: {
+    signIn: "/sign-in",
+    // error: "/error",
+  },
+  events: {
+    async linkAccount({ user }) {
+      await setEmailVerification(user.id!);
+    },
+  },
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider !== "credentials") return true;
+
+      const existingUser = await getUserById(user.id!);
+
+      if (!existingUser?.emailVerified) return false;
+
+      //todo: 2 Factor Authentication
+
+      return true;
+    },
+
     // @ts-ignore
     async session({ token, session }) {
       if (token.sub && session.user) {
