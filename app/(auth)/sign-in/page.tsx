@@ -10,6 +10,8 @@ import {
   GitHubLogoIcon,
   ReloadIcon,
   ExclamationTriangleIcon,
+  EyeOpenIcon,
+  EyeClosedIcon,
 } from "@radix-ui/react-icons";
 import { FaGoogle, FaX } from "react-icons/fa6";
 
@@ -44,6 +46,7 @@ const SignUp = () => {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isUrlError, setIsUrlError] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const router = useRouter();
 
   const searchParams = useSearchParams();
@@ -168,11 +171,45 @@ const SignUp = () => {
               control={form.control}
               name="password"
               render={({ field }) => (
-                <FormItem className="pb-2">
+                <FormItem className={cn("pb-2 relative")}>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input disabled={isPending} type="password" {...field} />
+                    <Input
+                      disabled={isPending}
+                      type={showPassword ? "text" : "password"}
+                      {...field}
+                    />
                   </FormControl>
+                  {showPassword ? (
+                    <Button
+                      className="absolute top-6 right-0"
+                      variant="outline"
+                      size="icon"
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      <EyeOpenIcon />
+                    </Button>
+                  ) : (
+                    <Button
+                      className="absolute top-6 right-0"
+                      variant="outline"
+                      size="icon"
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      <EyeClosedIcon />
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="link"
+                    className={cn(
+                      "px-0 w-full flex justify-end focus-visible:ring-0 focus-visible:ring-offset-0"
+                    )}
+                  >
+                    <Link href="/reset-password">Forgot your password?</Link>
+                  </Button>
                   <FormMessage />
                 </FormItem>
               )}

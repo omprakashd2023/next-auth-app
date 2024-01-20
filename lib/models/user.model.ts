@@ -9,7 +9,8 @@ export const createUser = async (data: SignUpSchemaType) => {
     });
     return user;
   } catch (error: any) {
-    throw new Error(error.message);
+    console.error(error.message);
+    throw new Error("Internal Server Error");
   }
 };
 
@@ -22,7 +23,8 @@ export const getUserById = async (id: string) => {
     });
     return user;
   } catch (error: any) {
-    throw new Error(error.message);
+    console.error(error.message);
+    throw new Error("Internal Server Error");
   }
 };
 
@@ -35,7 +37,22 @@ export const getUserByEmail = async (email: string) => {
     });
     return user;
   } catch (error: any) {
-    throw new Error(error.message);
+    console.error(error.message);
+    throw new Error("Internal Server Error");
+  }
+};
+
+export const updateUser = async (id: string, data: any) => {
+  try {
+    await prisma.user.update({
+      where: {
+        id,
+      },
+      data,
+    });
+  } catch (error: any) {
+    console.error(error.message);
+    throw new Error("Internal Server Error");
   }
 };
 
@@ -50,6 +67,7 @@ export const setEmailVerification = async (id: string) => {
       },
     });
   } catch (error: any) {
-    throw new Error(error.message);
+    console.error(error.message);
+    throw new Error("Internal Server Error");
   }
 };

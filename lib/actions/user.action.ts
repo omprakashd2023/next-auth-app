@@ -3,16 +3,33 @@
 import { AuthError } from "next-auth";
 
 import { signIn } from "@/auth";
-import { sendVerificationEmail } from "@/lib/email";
+import { sendEmail } from "@/lib/email";
 import { hashPassword, verifyPassword } from "@/lib/utils";
-import { createUser, getUserByEmail } from "@/lib/models/user.model";
-import { generateVerificationToken } from "@/lib/token";
+import {
+  createUser,
+  getUserByEmail,
+  updateUser,
+  setEmailVerification,
+} from "@/lib/models/user.model";
+import {
+  deleteVerificationToken,
+  getVerificationTokenByToken,
+} from "@/lib/models/verification-token.model";
+import {
+  deleteResetToken,
+  getResetTokenByToken,
+} from "@/lib/models/reset-token.model";
 import {
   SignInSchema,
   SignUpSchema,
   SignInSchemaType,
   SignUpSchemaType,
+  NewPasswordSchema,
+  NewPasswordSchemaType,
 } from "@/lib/validation/user";
+
+import { generateVerificationToken } from "@/lib/token";
+
 import { DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN } from "@/routes";
 
 export const signin = async (data: SignInSchemaType) => {
@@ -31,7 +48,15 @@ export const signin = async (data: SignInSchemaType) => {
   if (!user.emailVerified) {
     const token = await generateVerificationToken(email);
 
-    await sendVerificationEmail(token.email, user.name!, token.token);
+    await sendEmail({
+      email: token.email,
+      name: user.name!,
+      token: token.token,
+      path: "/verify-email",
+      subject: "Verify your email",
+      body: "You need to verify your email, to login. Please click the below button to verify your email.",
+      btnTitle: "Verify Email",
+    });
 
     return {
       success: true,
@@ -59,7 +84,8 @@ export const signin = async (data: SignInSchemaType) => {
           throw new Error("Something went wrong");
       }
     }
-    throw error;
+    console.log(error);
+    throw error.message;
   }
 };
 
@@ -83,13 +109,79 @@ export const signup = async (data: SignUpSchemaType) => {
 
     const token = await generateVerificationToken(email);
 
-    await sendVerificationEmail(token.email, name, token.token);
+    await sendEmail({
+      email: token.email,
+      name: name,
+      token: token.token,
+      path: "/verify-email",
+      subject: "Verify your email",
+      body: "You need to verify your email, to login. Please click the below button to verify your email.",
+      btnTitle: "Verify Email",
+    });
 
     return {
       success: true,
       message: "Verification email has been sent to your email address",
     };
   } catch (error: any) {
-    throw new Error(`Failed to register user: ${error.message}`);
+    throw error.message;
+  }
+};
+
+export const updatePassword = async (
+  data: NewPasswordSchemaType,
+  token?: string | null
+) => {
+  try {
+    if (!token) throw new Error("Missing Reset Token");
+
+    const validateFields = NewPasswordSchema.safeParse(data);
+    if (!validateFields.success) throw new Error(validateFields.error.message);
+
+    const { password: newPassword } = validateFields.data;
+
+    const resetToken = await getResetTokenByToken(token);
+    if (!resetToken) throw new Error("Token does not exists!!");
+
+    const hasExpired = new Date() > new Date(resetToken.expiresAt);
+    if (hasExpired) throw new Error("Token has expired!!");
+
+    const user = await getUserByEmail(resetToken.email);
+    if (!user) throw new Error("User does not exists!!");
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await updateUser(user.id, { password: hashedPassword });
+    await deleteResetToken(resetToken.id);
+
+    return {
+      success: true,
+      message: "Password has been updated successfully!!",
+    };
+  } catch (error: any) {
+    throw error.message;
+  }
+};
+
+export const verifyEmail = async (token: string) => {
+  try {
+    const verificationToken = await getVerificationTokenByToken(token);
+    if (!verificationToken) throw new Error("Token does not exists!!");
+
+    const hasExpired = new Date() > new Date(verificationToken.expiresAt);
+    if (hasExpired) throw new Error("Token has expired!!");
+
+    const user = await getUserByEmail(verificationToken.email);
+    if (!user) throw new Error("Email does not exists!!");
+
+    await setEmailVerification(user.id);
+    await deleteVerificationToken(verificationToken.id);
+
+    return {
+      success: true,
+      message: "Email has been verified successfully!!",
+    };
+  } catch (error: any) {
+    throw error.message;
   }
 };

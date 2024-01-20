@@ -22,7 +22,7 @@ export const createVerificationToken = async ({
 
     return verificationToken;
   } catch (error: any) {
-    throw new Error(`Error creating verification token: ${error.message}`);
+    throw new Error("Internal Server Error");
   }
 };
 
@@ -36,7 +36,7 @@ export const getVerificationTokenByToken = async (token: string) => {
 
     return verificationToken;
   } catch (error: any) {
-    throw new Error(`Error getting verification token: ${error.message}`);
+    throw new Error("Internal Server Error");
   }
 };
 
@@ -50,7 +50,7 @@ export const getVerificationTokenByEmail = async (email: string) => {
 
     return verificationToken;
   } catch (error: any) {
-    throw new Error(`Error getting verification token: ${error.message}`);
+    throw new Error("Internal Server Error");
   }
 };
 
@@ -62,6 +62,6 @@ export const deleteVerificationToken = async (id: string) => {
       },
     });
   } catch (error: any) {
-    throw new Error(`Error deleting verification token: ${error.message}`);
+    throw new Error("Internal Server Error");
   }
 };

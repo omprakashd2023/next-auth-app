@@ -1,11 +1,16 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { signIn } from "next-auth/react";
-import { GitHubLogoIcon, ReloadIcon } from "@radix-ui/react-icons";
+import {
+  GitHubLogoIcon,
+  ReloadIcon,
+  EyeClosedIcon,
+  EyeOpenIcon,
+} from "@radix-ui/react-icons";
 import { FaGoogle } from "react-icons/fa";
 
 import { Button } from "@/components/ui/button";
@@ -37,6 +42,7 @@ import { DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN } from "@/routes";
 const SignUp = () => {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const form = useForm<SignUpSchemaType>({
     resolver: zodResolver(SignUpSchema),
@@ -143,11 +149,36 @@ const SignUp = () => {
               control={form.control}
               name="password"
               render={({ field }) => (
-                <FormItem className="pb-2">
+                <FormItem className={cn("pb-2 relative")}>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input disabled={isPending} type="password" {...field} />
+                    <Input
+                      disabled={isPending}
+                      type={showPassword ? "text" : "password"}
+                      {...field}
+                    />
                   </FormControl>
+                  {showPassword ? (
+                    <Button
+                      className="absolute top-6 right-0"
+                      variant="outline"
+                      size="icon"
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      <EyeOpenIcon />
+                    </Button>
+                  ) : (
+                    <Button
+                      className="absolute top-6 right-0"
+                      variant="outline"
+                      size="icon"
+                      type="button"
+                      onClick={() => setShowPassword((prev) => !prev)}
+                    >
+                      <EyeClosedIcon />
+                    </Button>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

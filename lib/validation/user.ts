@@ -1,5 +1,27 @@
 import * as z from "zod";
 
+export const ResetPasswordSchema = z.object({
+  email: z.string().email({
+    message: "Invalid email address!!",
+  }),
+});
+
+export type ResetPasswordSchemaType = z.infer<typeof ResetPasswordSchema>;
+
+export const NewPasswordSchema = z
+  .object({
+    password: z.string().min(1, { message: "Password is required!!" }),
+    confirmPassword: z
+      .string()
+      .min(1, { message: "Confirm Password is required!!" }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+export type NewPasswordSchemaType = z.infer<typeof NewPasswordSchema>;
+
 export const SignInSchema = z.object({
   email: z.string().email({
     message: "Invalid email address!!",
