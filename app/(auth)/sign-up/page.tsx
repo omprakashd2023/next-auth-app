@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { signIn } from "next-auth/react";
@@ -41,6 +42,7 @@ import { DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN } from "@/routes";
 
 const SignUp = () => {
   const { toast } = useToast();
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
@@ -63,13 +65,14 @@ const SignUp = () => {
     startTransition(async () => {
       try {
         const response = await signup(data);
-        if (response.success)
+        if (response.success) {
+          router.push("/sign-in");
           toast({
             title: "Success",
             description: response.message,
             variant: "success",
           });
-        else throw new Error("Internal Server Error");
+        } else throw new Error("Internal Server Error");
       } catch (error: any) {
         toast({
           title: "Error",

@@ -46,6 +46,7 @@ const SignUp = () => {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isUrlError, setIsUrlError] = useState<boolean>(false);
+  const [show2FA, setShow2FA] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const router = useRouter();
 
@@ -75,13 +76,15 @@ const SignUp = () => {
       try {
         const response = await signin(data);
         if (response.success) {
+          response.showTwoFactorInput &&
+            setShow2FA(response.showTwoFactorInput);
+          response.redirect && router.replace(response.redirect);
           toast({
             title: "Success",
             description:
               response.message || "You have successfully logged in!!",
             variant: "success",
           });
-          response.redirect && router.replace(response.redirect);
         } else throw new Error("Internal Server Error");
       } catch (error: any) {
         toast({
@@ -127,93 +130,118 @@ const SignUp = () => {
             </Alert>
           </div>
         )}
-        <div className="w-full flex items-center gap-4 mb-2">
-          <Button
-            onClick={() => onClick("github")}
-            variant={"outline"}
-            size={"icon"}
-            className="w-1/2"
-          >
-            <GitHubLogoIcon height={22} width={22} />
-            <span className="ml-1">Github</span>
-          </Button>
-          <Button
-            onClick={() => onClick("google")}
-            variant={"outline"}
-            size={"icon"}
-            className="w-1/2"
-          >
-            <FaGoogle size={20} />
-            <span className="ml-1">Google</span>
-          </Button>
-        </div>
-        <div className="flex items-center mt-4 mb-2">
-          <div className="flex-1 h-[0.5px] bg-black/50 dark:bg-violet-200/30"></div>
-          <h4 className="mx-2 gradient-text-red-orange">or</h4>
-          <div className="flex-1 h-[0.5px] bg-black/50 dark:bg-violet-200/30"></div>
-        </div>
+        {!show2FA && (
+          <>
+            <div className="w-full flex items-center gap-4 mb-2">
+              <Button
+                onClick={() => onClick("github")}
+                variant={"outline"}
+                size={"icon"}
+                className="w-1/2"
+              >
+                <GitHubLogoIcon height={22} width={22} />
+                <span className="ml-1">Github</span>
+              </Button>
+              <Button
+                onClick={() => onClick("google")}
+                variant={"outline"}
+                size={"icon"}
+                className="w-1/2"
+              >
+                <FaGoogle size={20} />
+                <span className="ml-1">Google</span>
+              </Button>
+            </div>
+            <div className="flex items-center mt-4 mb-2">
+              <div className="flex-1 h-[0.5px] bg-black/50 dark:bg-violet-200/30"></div>
+              <h4 className="mx-2 gradient-text-red-orange">or</h4>
+              <div className="flex-1 h-[0.5px] bg-black/50 dark:bg-violet-200/30"></div>
+            </div>
+          </>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-2">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input disabled={isPending} type="email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem className={cn("pb-2 relative")}>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      disabled={isPending}
-                      type={showPassword ? "text" : "password"}
-                      {...field}
-                    />
-                  </FormControl>
-                  {showPassword ? (
-                    <Button
-                      className="absolute top-6 right-0"
-                      variant="outline"
-                      size="icon"
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                    >
-                      <EyeOpenIcon />
-                    </Button>
-                  ) : (
-                    <Button
-                      className="absolute top-6 right-0"
-                      variant="outline"
-                      size="icon"
-                      type="button"
-                      onClick={() => setShowPassword((prev) => !prev)}
-                    >
-                      <EyeClosedIcon />
-                    </Button>
+            {!show2FA ? (
+              <>
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input disabled={isPending} type="email" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                  <Button
-                    size="sm"
-                    variant="link"
-                    className={cn(
-                      "px-0 w-full flex justify-end focus-visible:ring-0 focus-visible:ring-offset-0"
-                    )}
-                  >
-                    <Link href="/reset-password">Forgot your password?</Link>
-                  </Button>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem className={cn("pb-2 relative")}>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          disabled={isPending}
+                          type={showPassword ? "text" : "password"}
+                          {...field}
+                        />
+                      </FormControl>
+                      {showPassword ? (
+                        <Button
+                          className="absolute top-6 right-0"
+                          variant="outline"
+                          size="icon"
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          <EyeOpenIcon />
+                        </Button>
+                      ) : (
+                        <Button
+                          className="absolute top-6 right-0"
+                          variant="outline"
+                          size="icon"
+                          type="button"
+                          disabled={isPending}
+                          onClick={() => setShowPassword((prev) => !prev)}
+                        >
+                          <EyeClosedIcon />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="link"
+                        type="button"
+                        className={cn("px-0")}
+                      >
+                        <Link href="/reset-password">
+                          Forgot your password?
+                        </Link>
+                      </Button>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            ) : (
+              <FormField
+                control={form.control}
+                name="code"
+                render={({ field }) => (
+                  <FormItem className={cn("pb-2")}>
+                    <FormLabel>Two Factor Authentication Code</FormLabel>
+                    <FormControl>
+                      <Input disabled={isPending} type="number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <Button
               className={cn(
                 "w-full bg-gradient-to-r from-red-500 to-orange-500 dark:text-white text-base"
@@ -223,8 +251,12 @@ const SignUp = () => {
               {isPending ? (
                 <div className="flex items-center">
                   <ReloadIcon className="size-4 animate-spin" />
-                  <span className="ml-1">Logging in...</span>
+                  <span className="ml-1">
+                    {show2FA ? "Logging in..." : "Verifying..."}
+                  </span>
                 </div>
+              ) : show2FA ? (
+                "Confirm"
               ) : (
                 "Login"
               )}

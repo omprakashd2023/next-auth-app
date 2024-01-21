@@ -14,14 +14,16 @@ enum Role {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  password      String?
-  emailVerified DateTime?
-  image         String?
-  role          Role      @default(USER)
-  accounts      Account[]
+  id                    String                 @id @default(cuid())
+  name                  String?
+  email                 String?                @unique
+  password              String?
+  emailVerified         DateTime?
+  image                 String?
+  role                  Role                   @default(USER)
+  accounts              Account[]
+  is2FAEnabled          Boolean                @default(false)
+  TwoFactorConfirmation TwoFactorConfirmation?
 }
 
 model Account {
@@ -59,4 +61,19 @@ model ResetToken {
   expiresAt DateTime
 
   @@unique([email, token])
+}
+
+model TwoFactorToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+
+  @@unique([email, token])
+}
+
+model TwoFactorConfirmation {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

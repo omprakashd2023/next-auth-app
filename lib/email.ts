@@ -5,8 +5,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 interface EmailParams {
   email: string;
   name: string;
-  token: string;
-  path: string;
+  token?: string;
+  path?: string;
   subject: string;
   body: string;
   btnTitle: string;
@@ -21,7 +21,8 @@ export const sendEmail = async ({
   body,
   btnTitle,
 }: EmailParams) => {
-  const link = `${process.env.CLIENT_URL}${path}?token=${token}`;
+  let link;
+  if (path) link = `${process.env.CLIENT_URL}${path}?token=${token}`;
 
   await resend.emails.send({
     from: "onboarding@resend.dev",
@@ -42,7 +43,11 @@ export const sendEmail = async ({
                                   <p style="font-size: 16px;">Hi, <strong>${name}</strong>,</p>
                                   <p style="font-size: 16px;">${body}</p>
                                   <div style="text-align: center; margin-top: 20px;">
-                                      <a href=${link} style="text-decoration: none; display: inline-block; background: linear-gradient(to right, #ef4444, #f97316); color: #fff; font-size: 18px; padding: 10px 20px; border-radius: 5px;">${btnTitle}</a>
+                                      ${
+                                        path
+                                          ? `<a href=${link} style="text-decoration: none; display: inline-block; background: linear-gradient(to right, #ef4444, #f97316); color: #fff; font-size: 18px; padding: 10px 20px; border-radius: 5px;">${btnTitle}</a>`
+                                          : `<button style="text-decoration: none; display: inline-block; background: linear-gradient(to right, #ef4444, #f97316); color: #fff; font-size: 18px; padding: 10px 20px; border-radius: 5px;">${btnTitle}</button>`
+                                      }
                                   </div>
                                   <p style="font-size: 16px; margin-top: 20px;">If you didn't request this, you can safely ignore this email.</p>
                                   <p style="font-size: 16px;">Regards,<br>Admin</p>

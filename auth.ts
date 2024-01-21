@@ -5,6 +5,11 @@ import authConfig from "@/auth.config";
 import prisma from "@/lib/prisma";
 import { getUserById, setEmailVerification } from "./lib/models/user.model";
 
+import {
+  deleteTwoFactorConfirmation,
+  getTwoFactorConfirmation,
+} from "@/lib/models/two-factor-confirmation.model";
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -36,7 +41,15 @@ export const {
 
       if (!existingUser?.emailVerified) return false;
 
-      //todo: 2 Factor Authentication
+      if (existingUser.is2FAEnabled) {
+        const twoFactorConfirmation = await getTwoFactorConfirmation(
+          existingUser.id
+        );
+
+        if (!twoFactorConfirmation) return false;
+
+        await deleteTwoFactorConfirmation(twoFactorConfirmation.id);
+      }
 
       return true;
     },

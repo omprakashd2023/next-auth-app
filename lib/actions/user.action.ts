@@ -20,6 +20,15 @@ import {
   getResetTokenByToken,
 } from "@/lib/models/reset-token.model";
 import {
+  deleteTwoFactorToken,
+  getTwoFactorTokenByEmail,
+} from "@/lib/models/two-factor-token.model";
+import {
+  createTwoFactorConfirmation,
+  deleteTwoFactorConfirmation,
+  getTwoFactorConfirmation,
+} from "@/lib/models/two-factor-confirmation.model";
+import {
   SignInSchema,
   SignUpSchema,
   SignInSchemaType,
@@ -28,7 +37,7 @@ import {
   NewPasswordSchemaType,
 } from "@/lib/validation/user";
 
-import { generateVerificationToken } from "@/lib/token";
+import { generateVerificationToken, generateTwoFactorToken } from "@/lib/token";
 
 import { DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN } from "@/routes";
 
@@ -36,11 +45,11 @@ export const signin = async (data: SignInSchemaType) => {
   const validateFields = SignInSchema.safeParse(data);
   if (!validateFields.success) throw new Error(validateFields.error.message);
 
-  const { email, password } = validateFields.data;
+  const { email, password, code } = validateFields.data;
 
   const user = await getUserByEmail(email);
   if (!user || !user.email || !user.password)
-    throw new Error("User does not exist!!");
+    throw new Error("Email does not exist!!");
 
   if (!verifyPassword(password, user.password))
     throw new Error("Invalid credentials");
@@ -64,6 +73,39 @@ export const signin = async (data: SignInSchemaType) => {
     };
   }
 
+  if (user.is2FAEnabled && user.email) {
+    if (code) {
+      const twoFactorToken = await getTwoFactorTokenByEmail(user.email);
+
+      if (!twoFactorToken || twoFactorToken.token !== code)
+        throw new Error("Invalid two factor authentication code");
+
+      const hasExpired = twoFactorToken.expiresAt < new Date();
+      if (hasExpired)
+        throw new Error("Two factor authentication code has expired");
+
+      await deleteTwoFactorToken(twoFactorToken.id);
+      const existingConfirmation = await getTwoFactorConfirmation(user.id);
+
+      if (existingConfirmation) await deleteTwoFactorConfirmation(user.id);
+
+      await createTwoFactorConfirmation(user.id);
+    } else {
+      const twoFactorToken = await generateTwoFactorToken(user.email);
+      await sendEmail({
+        email: user.email,
+        name: user.name!,
+        subject: "Two Factor Authentication Code",
+        body: "Here is your two factor authentication token.",
+        btnTitle: twoFactorToken.token,
+      });
+      return {
+        success: true,
+        showTwoFactorInput: true,
+        message: "Two factor authentication code has been sent to your email",
+      };
+    }
+  }
   try {
     await signIn("credentials", {
       email,
@@ -73,6 +115,7 @@ export const signin = async (data: SignInSchemaType) => {
 
     return {
       success: true,
+      showTwoFactorInput: false,
       redirect: DEFAULT_REDIRECT_PATH_AFTER_SIGN_IN,
     };
   } catch (error: any) {

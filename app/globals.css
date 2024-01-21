@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 ::selection {
-  user-select: none;
+  background-color: #f97316;
+  color: #fff;
 }
 
 @layer utilities {
